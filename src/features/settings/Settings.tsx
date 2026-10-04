@@ -20,6 +20,7 @@ import {
   Zap,
 } from 'lucide-react'
 import { useApp } from '../../state/AppState'
+import { track } from '../../lib/analytics'
 import { Badge, Button, Card, CardHeader, IconButton, Modal, PageHeader, Select, Tabs, Toggle, cx, inputClass } from '../../components/ui'
 import { incentiveWallet, salesforce, triggerFieldOptions, type TriggerCondition } from '../../data/lossLensData'
 
@@ -109,6 +110,7 @@ export function SalesforcePage() {
                   const next = { ...trigger, active: !trigger.active }
                   setTrigger(next)
                   setTriggerSaved(next)
+                  track('trigger_paused', { paused: trigger.active })
                   toast(trigger.active ? 'Trigger paused — no new invitations will be sent' : 'Trigger resumed')
                 }}
               >
@@ -118,6 +120,7 @@ export function SalesforcePage() {
                 variant="primary"
                 onClick={() => {
                   setTriggerSaved(trigger)
+                  track('trigger_saved', { conditions: trigger.conditions.length, slackVeto: trigger.guardrails.slackVeto })
                   toast('Trigger saved · applies to new Closed Lost opportunities')
                 }}
               >

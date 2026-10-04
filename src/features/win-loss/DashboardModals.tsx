@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Check, Download, Film, Pause, Play, Printer } from 'lucide-react'
 import { useApp, usePlayback } from '../../state/AppState'
+import { track } from '../../lib/analytics'
 import { Avatar, Button, Modal, Select, cx, initialsOf, inputClass } from '../../components/ui'
 import { acmeDeal, citations, dashboardBaseline, fmtTime, lostDeals, reasonLabels, reelClips } from '../../data/lossLensData'
 
@@ -45,6 +46,7 @@ function ShareModal({ open, onClose }: { open: boolean; onClose: () => void }) {
               variant="primary"
               onClick={() => {
                 setDone(true)
+                track('share_slack_confirmed', { channel })
                 toast(`Preview confirmed for ${channel} · nothing was posted (simulated)`, 'info')
               }}
             >
@@ -142,6 +144,7 @@ function ReelModal({ open, onClose }: { open: boolean; onClose: () => void }) {
               onClick={() => {
                 setReels((r) => [{ id: Date.now(), title: title.trim(), clips: selected.length }, ...r])
                 setCreated(true)
+                track('reel_created', { clips: selected.length })
                 toast(`Reel “${title.trim()}” created in Repository`)
               }}
             >
@@ -222,6 +225,7 @@ function ExportModal({ open, onClose }: { open: boolean; onClose: () => void }) 
     a.download = 'ledgerly-win-loss-last-90-days.csv'
     a.click()
     URL.revokeObjectURL(url)
+    track('report_exported', { format: 'csv' })
     toast('CSV downloaded')
   }
   return (
@@ -240,6 +244,7 @@ function ExportModal({ open, onClose }: { open: boolean; onClose: () => void }) 
             icon={<Printer size={14} />}
             onClick={() => {
               onClose()
+              track('report_exported', { format: 'pdf' })
               window.setTimeout(() => window.print(), 250)
             }}
           >

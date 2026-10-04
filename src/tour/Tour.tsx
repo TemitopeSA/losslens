@@ -4,6 +4,7 @@ import { useApp, usePlayback } from '../state/AppState'
 import { Button, cx } from '../components/ui'
 import { tourSteps } from './tourSteps'
 import type { TourPlacement } from '../data/lossLensData'
+import { track } from '../lib/analytics'
 
 const TOTAL = tourSteps.length
 const PAD = 6
@@ -93,6 +94,7 @@ export function TourController() {
     const s = tourSteps[tour.step]
     const dir = prevStep.current !== null && prevStep.current > tour.step ? 'back' : 'forward'
     prevStep.current = tour.step
+    track('tour_step_viewed', { step: tour.step + 1, id: s.id })
     const a = appRef.current
     if (s.route && a.route !== s.route) a.navigate(s.route)
     s.setup?.({ app: a, seek, setPlaying }, dir)
@@ -104,7 +106,10 @@ export function TourController() {
     if (tour.step < TOTAL - 1) setTour((t) => ({ ...t, step: t.step + 1 }))
   }
   const back = () => tour.step > 0 && setTour((t) => ({ ...t, step: t.step - 1 }))
-  const skip = () => setTour((t) => ({ ...t, open: false, resumable: t.step < TOTAL - 1 }))
+  const skip = () => {
+    track('tour_skipped', { step: tour.step + 1 })
+    setTour((t) => ({ ...t, open: false, resumable: t.step < TOTAL - 1 }))
+  }
 
   // Keyboard: ← → Esc, ignored while typing.
   const keyRef = useRef({ next, back, skip })
@@ -148,6 +153,7 @@ function Spotlight({ canNext, onNext, onBack, onSkip }: { canNext: boolean; onNe
   const cardRef = useRef<HTMLDivElement>(null)
   const [cardH, setCardH] = useState(220)
   const scrolledFor = useRef<string>('')
+  const scrollTries = useRef({ n: 0, at: 0 })
 
   // Track the target every frame: handles navigation, layout shifts, scrolling and animation.
   useEffect(() => {
@@ -157,12 +163,18 @@ function Spotlight({ canNext, onNext, onBack, onSkip }: { canNext: boolean; onNe
       const r = selector ? unionRect(selector) : null
       if (r) {
         const key = `${tour.step}|${selector}`
+        const tooTall = r.height > window.innerHeight - 120
+        const offscreen = tooTall ? r.top < 40 || r.top > window.innerHeight * 0.4 : r.top < 56 || r.top + r.height > window.innerHeight - 8
+        const now = performance.now()
         if (scrolledFor.current !== key) {
           scrolledFor.current = key
+          scrollTries.current = { n: 0, at: 0 }
+        }
+        // Retry: a smooth scroll can be cancelled while the destination is still laying out.
+        if (offscreen && scrollTries.current.n < 4 && now - scrollTries.current.at > 450) {
           const el = document.querySelector<HTMLElement>(selector)
-          const tooTall = r.height > window.innerHeight - 120
-          const offscreen = r.top < 56 || r.top + r.height > window.innerHeight - 8
-          if (el && offscreen) el.scrollIntoView({ block: tooTall ? 'start' : 'center', behavior: 'smooth' })
+          el?.scrollIntoView({ block: tooTall ? 'start' : 'center', behavior: scrollTries.current.n === 0 ? 'smooth' : 'auto' })
+          scrollTries.current = { n: scrollTries.current.n + 1, at: now }
         }
         setMissing(false)
       } else if (performance.now() - started > 900) {
@@ -299,6 +311,7 @@ export function WelcomeModal() {
   }, [welcomeOpen, dismissWelcome])
   if (!welcomeOpen) return null
   const start = (step: number) => {
+    track('tour_started', { fromStep: step + 1 })
     dismissWelcome()
     setTour({ open: true, step, resumable: false })
   }
@@ -338,6 +351,7 @@ export function WelcomeModal() {
           <Button
             className="h-9 px-4"
             onClick={() => {
+              track('welcome_explore')
               dismissWelcome()
               navigate('win-loss')
             }}
@@ -401,7 +415,13 @@ function ClosingModal({ onBack }: { onBack: () => void }) {
           Back
         </Button>
         <div className="ml-auto flex gap-2">
-          <Button className="h-9 px-4" onClick={() => setTour({ open: true, step: 0, resumable: false })}>
+          <Button
+            className="h-9 px-4"
+            onClick={() => {
+              track('tour_restarted')
+              setTour({ open: true, step: 0, resumable: false })
+            }}
+          >
             Restart tour
           </Button>
           <Button
@@ -409,6 +429,7 @@ function ClosingModal({ onBack }: { onBack: () => void }) {
             variant="primary"
             className="h-9 px-4"
             onClick={() => {
+              track('tour_completed')
               setTour({ open: false, step: 0, resumable: false })
               navigate('win-loss')
             }}

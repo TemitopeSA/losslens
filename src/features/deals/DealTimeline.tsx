@@ -274,7 +274,7 @@ function EventBody({
                     onClick={() => onDecide('held')}
                     className={cx(
                       'h-7 rounded border px-3 text-[12px] font-semibold transition-colors',
-                      decision === 'held' ? 'border-amber-300 bg-amber-50 text-amber-800' : 'border-gray-300 bg-white text-gray-800 hover:bg-gray-50 disabled:opacity-50',
+                      decision === 'held' ? 'border-amber-300 bg-amber-50 text-amber-800' : 'border-gray-300 bg-white text-gray-800 hover:bg-gray-50 disabled:border-gray-200 disabled:text-gray-400',
                     )}
                   >
                     Hold
@@ -284,7 +284,9 @@ function EventBody({
                     onClick={() => onDecide('approved')}
                     className={cx(
                       'h-7 rounded border px-3 text-[12px] font-semibold transition-colors',
-                      decision === 'approved' ? 'border-[#007a5a] bg-[#007a5a] text-white' : 'border-[#007a5a] bg-[#007a5a] text-white hover:bg-[#006a4e] disabled:opacity-50',
+                      decision === 'approved'
+                        ? 'border-[#007a5a] bg-[#007a5a] text-white'
+                        : 'border-[#007a5a] bg-[#007a5a] text-white hover:bg-[#006a4e] disabled:border-gray-200 disabled:bg-white disabled:text-gray-400',
                     )}
                   >
                     Let it run

@@ -1,4 +1,5 @@
-import { AppStateProvider, useApp } from './state/AppState'
+import { Analytics } from '@vercel/analytics/react'
+import { AppStateProvider, routePath, useApp } from './state/AppState'
 import { Sidebar, TopBar } from './components/Shell'
 import { Toasts } from './components/Toasts'
 import { IntegrationsPage, SalesforcePage } from './features/settings/Settings'
@@ -59,6 +60,7 @@ function AppShell() {
       <WelcomeModal />
       <TourButton />
       <Toasts />
+      <Analytics route={routePath(route)} path={routePath(route)} />
     </div>
   )
 }

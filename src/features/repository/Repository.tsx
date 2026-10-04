@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ChevronDown, ChevronRight, EyeOff, Film, Highlighter, Pause, Play, Quote, SkipBack, SkipForward, Sparkles, Tag } from 'lucide-react'
 import { useApp, useOpenCitation, usePlayback } from '../../state/AppState'
+import { track } from '../../lib/analytics'
 import { Avatar, Badge, Button, Card, CardHeader, IconButton, PageHeader, Tabs, cx } from '../../components/ui'
 import { acmeDeal, acmeHighlights, acmeSummary, citations, fmtTime, insights, repositoryInterviews, transcript } from '../../data/lossLensData'
 
@@ -377,6 +378,7 @@ export function InterviewPage() {
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => {
               setUserHighlights((h) => [...h, { id: Date.now(), t: selection.t, text: selection.text }])
+              track('highlight_created')
               toast(`Highlight created at ${fmtTime(selection.t)} · saved to Repository`)
               window.getSelection()?.removeAllRanges()
               setSelection(null)

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { ArrowDownRight, ArrowUpRight, ChevronRight, FileDown, Film, Play, Quote, RotateCcw, Share2, Sparkles } from 'lucide-react'
 import { defaultFilters, useApp, useOpenCitation, type Filters } from '../../state/AppState'
+import { track } from '../../lib/analytics'
 import { Badge, Button, Card, CardHeader, PageHeader, Select, Tabs, cx } from '../../components/ui'
 import {
   citations,
@@ -128,7 +129,10 @@ export function WinLossPage() {
 
 function FilterBar() {
   const { filters, setFilters } = useApp()
-  const set = (k: keyof Filters) => (v: string) => setFilters((f) => ({ ...f, [k]: v }))
+  const set = (k: keyof Filters) => (v: string) => {
+    track('dashboard_filter_changed', { filter: k, value: v })
+    setFilters((f) => ({ ...f, [k]: v }))
+  }
   const changed = !isDefault(filters)
   return (
     <div className="flex flex-wrap items-center gap-2">

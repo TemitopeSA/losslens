@@ -9,6 +9,7 @@ import {
   type ScriptedAnswer,
   type TriggerCondition,
 } from '../data/lossLensData'
+import { track } from '../lib/analytics'
 
 /* ------------------------------------------------------------------ */
 /* Routing                                                             */
@@ -42,6 +43,9 @@ const routeToHash: Record<Route, string> = {
   settings: '#/settings/integrations',
   salesforce: '#/settings/integrations/salesforce',
 }
+
+/** Analytics path for a route, e.g. /win-loss/deals/acme-freight. */
+export const routePath = (r: Route) => routeToHash[r].slice(1)
 
 function hashToRoute(hash: string): Route {
   const found = (Object.entries(routeToHash) as [Route, string][]).find(([, h]) => h === hash)
@@ -235,13 +239,22 @@ function useAppStateValue() {
     return () => window.clearTimeout(id)
   }, [sim.status, sim.frame, sim.decision])
 
-  const simStart = useCallback(() => setSim({ frame: 0, status: 'playing', decision: null }), [])
+  const simStart = useCallback(() => {
+    track('simulation_started')
+    setSim({ frame: 0, status: 'playing', decision: null })
+  }, [])
+  const prevStatus = useRef(sim.status)
+  useEffect(() => {
+    if (prevStatus.current === 'playing' && sim.status === 'complete') track('simulation_completed', { decision: sim.decision ?? 'none' })
+    prevStatus.current = sim.status
+  }, [sim.status, sim.decision])
   const simReset = useCallback(() => setSim({ frame: 0, status: 'idle', decision: null }), [])
   const simComplete = useCallback(() => setSim({ frame: SIM_LAST_FRAME, status: 'complete', decision: 'auto' }), [])
   const simPause = useCallback(() => setSim((s) => (s.status === 'playing' ? { ...s, status: 'paused' } : s)), [])
   const simResume = useCallback(() => setSim((s) => (s.status === 'paused' ? { ...s, status: 'playing' } : s)), [])
   const simDecide = useCallback(
     (d: 'approved' | 'held') => {
+      track('owner_decision', { decision: d })
       setSim((s) => {
         if (d === 'held') return { ...s, decision: 'held', status: 'held' }
         // Approve: skip the remaining veto window and continue.
@@ -254,7 +267,13 @@ function useAppStateValue() {
   )
 
   /* ------------------ Ask AI ------------------ */
-  const [askOpen, setAskOpen] = useState(false)
+  const [askOpen, setAskOpenRaw] = useState(false)
+  const askOpenRef = useRef(false)
+  const setAskOpen = useCallback((open: boolean) => {
+    if (open && !askOpenRef.current) track('ask_ai_opened')
+    askOpenRef.current = open
+    setAskOpenRaw(open)
+  }, [])
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const msgId = useRef(0)
   const streaming = messages.some((m) => m.role === 'assistant' && m.revealed < m.total)
@@ -264,6 +283,7 @@ function useAppStateValue() {
     if (!question) return
     const answer = pickAnswer(question)
     const total = countWords(answer)
+    track('ask_ai_question', { answer: answer.id })
     setMessages((m) => [
       ...m,
       { id: ++msgId.current, role: 'user', question, revealed: 0, total: 0 },
@@ -398,6 +418,7 @@ export function useOpenCitation() {
     (citationId: string, opts?: { keepPanel?: boolean }) => {
       const c = citations[citationId]
       if (!c) return
+      track('citation_opened', { citation: citationId })
       if (c.interviewId === acmeDeal.id) {
         navigate('interview')
         seek(c.t)

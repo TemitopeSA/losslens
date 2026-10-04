@@ -211,15 +211,16 @@ function StudioEditor() {
   const flexLabel = alwaysOnStudy.flexibilityLabels[study.flexibility]
 
   const updateQ = (i: number, text: string) => setStudy((s) => ({ ...s, guide: s.guide.map((q, j) => (j === i ? text : q)) }))
-  const move = (i: number, d: -1 | 1) =>
+  const move = (i: number, d: -1 | 1) => {
+    const j = i + d
+    if (j < 0 || j >= study.guide.length) return
     setStudy((s) => {
       const g = [...s.guide]
-      const j = i + d
-      if (j < 0 || j >= g.length) return s
       ;[g[i], g[j]] = [g[j], g[i]]
-      setSelected(j)
       return { ...s, guide: g }
     })
+    setSelected(j)
+  }
 
   return (
     <div className="grid grid-cols-[minmax(0,1.5fr)_minmax(300px,1fr)] items-start gap-5">
