@@ -1,0 +1,565 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="A concept for Great Question: every Closed Lost deal in Salesforce triggers an AI-moderated buyer interview, and the real loss reason flows back to the CRM.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LossLens: every lost deal, interviewed automatically">
+<meta property="og:description" content="A concept case study and working prototype for Great Question.">
+<meta property="og:url" content="https://losslens-gq.vercel.app/case-study/">
+<meta property="og:image" content="https://losslens-gq.vercel.app/case-study/img/og.png">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://losslens-gq.vercel.app/case-study/img/og.png">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<title>LossLens Case Study</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: dark navy hero with product shot overlapping into a light editorial column; alternating screen/text walkthrough; data figures drawn in SVG from tokens. */
+:root{
+  --paper:#F6F7FA; --surface:#FFFFFF; --ink:#0E1626; --ink-2:#3B4559; --muted:#6B7488; --line:#DFE3EB;
+  --accent:#266BD8; --accent-soft:#E6EEFB; --crm:#A8792C; --crm-soft:#F6EEDD; --good:#1F8A5B; --good-soft:#E3F3EB;
+  --hero:#070C16; --hero-ink:#F3F5F9; --hero-muted:#9AA4B8;
+  --display:"Newsreader", "Iowan Old Style", Georgia, serif;
+  --body:"Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --shadow:0 1px 2px rgba(14,22,38,.06), 0 12px 32px -12px rgba(14,22,38,.22);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --paper:#0B111C; --surface:#121A28; --ink:#E9EDF4; --ink-2:#BCC4D3; --muted:#8B95A8; --line:#243045;
+  --accent:#5B93EC; --accent-soft:#16264A; --crm:#D4A657; --crm-soft:#2E2414; --good:#4CC28C; --good-soft:#12291F;
+  --hero:#04070D; --shadow:0 1px 2px rgba(0,0,0,.4), 0 12px 32px -12px rgba(0,0,0,.6); color-scheme:dark }}
+:root[data-theme="dark"]{
+  --paper:#0B111C; --surface:#121A28; --ink:#E9EDF4; --ink-2:#BCC4D3; --muted:#8B95A8; --line:#243045;
+  --accent:#5B93EC; --accent-soft:#16264A; --crm:#D4A657; --crm-soft:#2E2414; --good:#4CC28C; --good-soft:#12291F;
+  --hero:#04070D; --shadow:0 1px 2px rgba(0,0,0,.4), 0 12px 32px -12px rgba(0,0,0,.6); color-scheme:dark }
+
+*{box-sizing:border-box}
+html{color-scheme:light}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+a{color:var(--accent)}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:24px}
+.narrow{max-width:720px}
+h1,h2,h3{font-family:var(--display);font-weight:400;letter-spacing:-.01em;text-wrap:balance;margin:0}
+h2{font-size:clamp(30px,4vw,44px);line-height:1.1}
+h3{font-size:24px;line-height:1.2}
+p{margin:0}
+.eyebrow{font:500 12px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.lede{font-size:19px;color:var(--ink-2);line-height:1.55}
+section{padding-block:88px}
+.sec-head{display:grid;gap:14px;margin-bottom:44px;max-width:760px}
+.tnum{font-variant-numeric:tabular-nums}
+
+/* Hero */
+.hero{background:var(--hero);color:var(--hero-ink);padding-block:72px 0;position:relative;overflow:hidden}
+.hero::before{content:"";position:absolute;inset:0;background:
+  radial-gradient(600px 300px at 80% 10%, rgba(38,107,216,.28), transparent 70%),
+  radial-gradient(500px 260px at 10% 90%, rgba(168,121,44,.14), transparent 70%);pointer-events:none}
+.hero .wrap{position:relative}
+.hero-meta{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;font:500 12px/1.4 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--hero-muted)}
+.hero-meta .dot{width:4px;height:4px;border-radius:50%;background:var(--hero-muted)}
+.hero h1{font-size:clamp(44px,7vw,84px);line-height:1;margin-top:28px;max-width:900px}
+.hero h1 em{font-style:italic;color:#8FB4F2}
+.hero .lede{color:#C9D1DF;max-width:640px;margin-top:22px;font-size:20px}
+.cta-row{display:flex;flex-wrap:wrap;gap:12px;margin-top:32px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:12px 18px;border-radius:6px;font:600 15px/1 var(--body);text-decoration:none;border:1px solid transparent}
+.btn-primary{background:#266BD8;color:#fff}
+.btn-primary:hover{background:#1F5CBD}
+.btn-ghost{border-color:rgba(255,255,255,.22);color:#fff}
+.btn-ghost:hover{border-color:rgba(255,255,255,.5)}
+.btn:focus-visible,.shot:focus-visible{outline:3px solid #8FB4F2;outline-offset:3px}
+.hero-shot{margin-top:56px;margin-bottom:-120px;position:relative;z-index:2}
+.after-hero{padding-top:168px}
+
+/* Browser-framed screenshots */
+.shot{display:block;width:100%;background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:var(--shadow);cursor:zoom-in;padding:0;text-align:left}
+.hero .shot{border-color:#1E293B}
+.chrome{display:flex;align-items:center;gap:6px;padding:9px 12px;background:#EEF1F6;border-bottom:1px solid #DDE2EA}
+.chrome i{width:9px;height:9px;border-radius:50%;background:#C9CFDA;display:block}
+.chrome span{margin-left:10px;font:400 11px/1 var(--mono);color:#6B7488;background:#fff;border-radius:4px;padding:5px 10px;flex:1;max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.shot img{display:block;width:100%;height:auto}
+figcaption{font-size:13px;color:var(--muted);margin-top:12px}
+
+/* At a glance */
+.glance{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.glance div{background:var(--surface);padding:28px;display:grid;gap:10px;align-content:start}
+.glance b{font:500 12px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.glance p{font-size:17px;color:var(--ink)}
+
+/* Problem */
+.two{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:56px;align-items:start}
+.prose{display:grid;gap:18px;color:var(--ink-2);font-size:17px}
+.prose strong{color:var(--ink);font-weight:600}
+blockquote{margin:0;padding:28px 28px 24px;border-left:3px solid var(--accent);background:var(--surface);border-radius:0 10px 10px 0;box-shadow:var(--shadow)}
+blockquote p{font-family:var(--display);font-size:28px;line-height:1.25;color:var(--ink)}
+blockquote cite{display:block;margin-top:14px;font:500 13px/1.4 var(--body);font-style:normal;color:var(--muted)}
+.compare{width:100%;border-collapse:collapse;margin-top:48px;font-size:15px}
+.compare th,.compare td{padding:14px 16px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+.compare thead th{font:500 12px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.compare td:first-child{color:var(--muted);width:24%}
+.compare td:last-child{color:var(--ink);font-weight:500}
+.compare td:last-child::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);margin-right:10px;vertical-align:1px}
+.tablewrap{overflow-x:auto}
+
+/* Flow */
+.flow{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;position:relative}
+.flow li{list-style:none;position:relative;padding:0 14px 0 0}
+.flow ol{margin:0;padding:0}
+.flow .node{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.flow .num{flex:none;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font:600 14px/1 var(--mono);background:var(--surface);border:1.5px solid var(--accent);color:var(--accent);position:relative;z-index:1}
+.flow .rail{flex:1;height:1.5px;background:linear-gradient(90deg,var(--accent),var(--line))}
+.flow li:last-child .rail{display:none}
+.flow h3{font-family:var(--body);font-size:16px;font-weight:600;margin-bottom:6px}
+.flow p{font-size:14px;color:var(--ink-2)}
+.flow .tag{display:inline-block;margin-top:10px;font:500 11px/1 var(--mono);color:var(--muted);background:var(--paper);border:1px solid var(--line);padding:5px 7px;border-radius:4px}
+
+/* Building blocks */
+.blocks{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:56px;align-items:start}
+.meter{display:grid;gap:14px}
+.meter .big{font-family:var(--display);font-size:96px;line-height:.9}
+.meter .big span{color:var(--muted);font-size:48px}
+.cells{display:grid;grid-template-columns:repeat(11,1fr);gap:6px}
+.cells i{display:block;height:34px;border-radius:4px;background:var(--accent)}
+.cells i.new{background:transparent;border:1.5px dashed var(--crm)}
+.legend{display:flex;flex-wrap:wrap;gap:16px;font-size:13px;color:var(--muted)}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px;background:var(--accent)}
+.legend span.n::before{background:transparent;border:1.5px dashed var(--crm)}
+.caps{width:100%;border-collapse:collapse;font-size:14.5px}
+.caps td{padding:12px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+.caps td:first-child{font-weight:600;color:var(--ink);width:38%}
+.caps td:nth-child(2){color:var(--ink-2)}
+.pill{display:inline-block;font:500 11px/1 var(--mono);padding:5px 7px;border-radius:999px;white-space:nowrap}
+.pill.ship{background:var(--good-soft);color:var(--good)}
+.pill.new{background:var(--crm-soft);color:var(--crm)}
+
+/* Walkthrough */
+.steps{display:grid;gap:96px}
+.step{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:48px;align-items:center}
+.step:nth-child(even){grid-template-columns:minmax(0,1fr) minmax(0,1.45fr)}
+.step:nth-child(even) .step-media{order:2}
+.step-text{display:grid;gap:14px}
+.step-num{font:500 13px/1 var(--mono);color:var(--accent);letter-spacing:.08em}
+.step-text p{color:var(--ink-2);font-size:16.5px}
+.proves{font-size:14px;color:var(--ink);background:var(--accent-soft);border-radius:8px;padding:12px 14px}
+.proves b{font:500 11px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--accent);display:block;margin-bottom:6px}
+
+/* Charts */
+.chart-grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:24px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:28px;display:grid;gap:18px;align-content:start}
+.panel h3{font-family:var(--body);font-size:16px;font-weight:600}
+.panel .sub{font-size:13px;color:var(--muted);margin-top:-12px}
+.panel svg{width:100%;height:auto;display:block}
+.svg-label{fill:var(--ink);font:500 13px var(--body)}
+.svg-muted{fill:var(--muted);font:400 11px var(--mono)}
+.svg-val{font:600 12px var(--mono)}
+.callout-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;margin-top:24px}
+.stat{border-top:2px solid var(--ink);padding-top:14px;display:grid;gap:6px}
+.stat b{font-family:var(--display);font-weight:400;font-size:44px;line-height:1}
+.stat span{font-size:14px;color:var(--ink-2)}
+.demo-note{font-size:12.5px;color:var(--muted);margin-top:18px}
+
+/* Value cards */
+.value{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
+.vcard{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:28px;display:grid;gap:12px;align-content:start}
+.vcard .k{font:500 12px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.vcard h3{font-size:26px}
+.vcard p{color:var(--ink-2);font-size:15.5px}
+
+/* Risks */
+.risks{width:100%;border-collapse:collapse;font-size:15px}
+.risks th{font:500 12px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:left;padding:12px 14px;border-bottom:1px solid var(--ink)}
+.risks td{padding:16px 14px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--ink-2)}
+.risks td:first-child{color:var(--ink);font-weight:600;width:30%}
+
+/* Pilot */
+.pilot{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface)}
+.pilot div{padding:24px;border-right:1px solid var(--line);display:grid;gap:10px;align-content:start}
+.pilot div:last-child{border-right:0}
+.pilot .wk{font:500 12px/1 var(--mono);color:var(--accent);letter-spacing:.08em}
+.pilot h3{font-family:var(--body);font-size:16px;font-weight:600}
+.pilot p{font-size:14px;color:var(--ink-2)}
+.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:24px;margin-top:36px}
+.roadmap{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;margin-top:56px}
+.roadmap div{display:grid;gap:10px;align-content:start}
+.roadmap b{font:500 12px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding-bottom:10px;border-bottom:1px solid var(--line)}
+.roadmap ul{margin:0;padding-left:18px;color:var(--ink-2);font-size:15px;display:grid;gap:6px}
+
+/* Closing */
+.closing{background:var(--hero);color:var(--hero-ink);padding-block:96px}
+.closing .grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:56px;align-items:center}
+.closing h2{font-size:clamp(34px,5vw,56px)}
+.closing p{color:#C9D1DF;font-size:18px;margin-top:18px}
+.closing .shot{border-color:#1E293B}
+.sig{margin-top:36px;padding-top:20px;border-top:1px solid #1E293B;display:grid;gap:6px;font-size:14px;color:var(--hero-muted)}
+.sig strong{color:var(--hero-ink);font-weight:600;font-size:16px}
+.sig code{font-family:var(--mono);color:#C9D1DF;user-select:all}
+footer{padding-block:28px;font-size:12.5px;color:var(--muted);text-align:center}
+
+/* Lightbox */
+.lb[hidden]{display:none}
+.lb{position:fixed;inset:0;background:rgba(4,7,13,.88);display:grid;place-items:center;padding:24px;z-index:50}
+.lb img{max-width:min(1400px,100%);max-height:90vh;border-radius:8px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.lb button{position:absolute;top:16px;right:16px;background:#fff;border:0;border-radius:6px;padding:8px 12px;font:600 14px var(--body);cursor:pointer}
+
+@media (max-width:900px){
+  .two,.blocks,.step,.step:nth-child(even),.chart-grid,.closing .grid{grid-template-columns:minmax(0,1fr);gap:32px}
+  .step:nth-child(even) .step-media{order:0}
+  .flow{grid-template-columns:minmax(0,1fr);gap:24px}
+  .flow .rail{display:none}
+  .glance,.callout-row,.value,.roadmap{grid-template-columns:minmax(0,1fr)}
+  .pilot,.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pilot div:nth-child(2){border-right:0}
+  .pilot div:nth-child(-n+2){border-bottom:1px solid var(--line)}
+  section{padding-block:64px}
+  .hero-shot{margin-bottom:-60px}.after-hero{padding-top:108px}
+}
+@media (max-width:520px){
+  .wrap{padding-inline:16px}
+  .pilot,.metrics{grid-template-columns:minmax(0,1fr)}
+  .pilot div{border-right:0;border-bottom:1px solid var(--line)}
+  .meter .big{font-size:72px}
+  .cells i{height:24px}
+}
+@media (prefers-reduced-motion:no-preference){
+  .hero-shot{animation:rise .9s cubic-bezier(.2,.7,.2,1) both}
+  @keyframes rise{from{transform:translateY(24px)}to{transform:none}}
+}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="hero-meta">
+      <span>Concept case study</span><span class="dot"></span><span>For the Great Question team</span><span class="dot"></span><span>October 2026</span>
+    </div>
+    <h1>LossLens: every lost deal, <em>interviewed automatically.</em></h1>
+    <p class="lede">A working prototype that turns a Closed Lost opportunity in Salesforce into an AI-moderated buyer interview, then into evidence the revenue and product teams can act on. Built on capabilities Great Question has already shipped.</p>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="https://losslens-gq.vercel.app/" target="_blank" rel="noopener">Open the live prototype →</a>
+      <a class="btn btn-ghost" href="#walkthrough">Read the walkthrough</a>
+    </div>
+    <div class="hero-shot">
+      <button class="shot" data-full="dashboard" aria-label="Enlarge: Win/Loss dashboard">
+        <div class="chrome"><i></i><i></i><i></i><span>losslens-gq.vercel.app/#/win-loss</span></div>
+        <img src="img/dashboard.jpg" alt="Win/Loss dashboard comparing CRM-logged loss reasons with what buyers said in interviews">
+      </button>
+    </div>
+  </div>
+</header>
+
+<main>
+<section class="after-hero">
+  <div class="wrap">
+    <div class="glance">
+      <div><b>The problem</b><p>Loss reasons in the CRM are a rep's guess from a dropdown. Real win/loss research is slow, expensive and covers a handful of deals.</p></div>
+      <div><b>The product</b><p>A Salesforce trigger invites the buyer to a 15-minute AI interview. The real reason flows back to the CRM, a live dashboard and Ask AI.</p></div>
+      <div><b>Why Great Question</b><p>8 of the 11 building blocks are already live. LossLens adds a CRM trigger, a win/loss view and a write-back, and opens a budget held by revenue leaders.</p></div>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:0">
+  <div class="wrap">
+    <div class="two">
+      <div>
+        <div class="sec-head" style="margin-bottom:28px">
+          <span class="eyebrow">The problem</span>
+          <h2>Companies record why they lost. They rarely know why.</h2>
+        </div>
+        <div class="prose">
+          <p>When a deal closes lost, the rep picks a reason from a picklist, usually <strong>Price</strong> or <strong>No decision</strong>. That field then feeds pipeline reviews, pricing debates and roadmap arguments. Nobody asked the buyer.</p>
+          <p>The teams that do ask the buyer run win/loss as a project: an outside firm or a researcher's spare calendar, a quarterly readout, a dozen hand-picked deals and a slide deck that is out of date by the next board meeting.</p>
+          <p>Great Question already has every ingredient to make this continuous: the CRM connection, a moderator that works around the clock, incentives, and a repository that keeps evidence searchable. LossLens connects them to one event that every B2B company has: <strong>Closed Lost</strong>.</p>
+        </div>
+      </div>
+      <blockquote>
+        <p>“The people who didn't buy will tell you more than the people who did.”</p>
+        <cite>Ned Dwyer, on LinkedIn, August 2026</cite>
+      </blockquote>
+    </div>
+
+    <div class="tablewrap">
+      <table class="compare">
+        <thead><tr><th></th><th>Win/loss today</th><th>With LossLens</th></tr></thead>
+        <tbody>
+          <tr><td>Cadence</td><td>Quarterly project, when someone has time</td><td>Always on, triggered by every qualifying loss</td></tr>
+          <tr><td>Coverage</td><td>A handful of hand-picked deals</td><td>Every deal that matches the rules, e.g. ≥ $10k, not a renewal</td></tr>
+          <tr><td>Interviewer</td><td>Outside firm, or the rep who lost the deal</td><td>Neutral AI moderator with Great Question's concealed identity</td></tr>
+          <tr><td>Time to insight</td><td>Weeks after the decision</td><td>About 4 days from Closed Lost to an evidence-backed summary</td></tr>
+          <tr><td>Where it lands</td><td>A slide deck</td><td>Salesforce field, Win/Loss dashboard, Repository, Slack and MCP</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section style="background:var(--surface);border-block:1px solid var(--line)">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">How it works</span>
+      <h2>One CRM event, five automatic steps.</h2>
+      <p class="lede">No researcher has to schedule anything. Sales stays in control at the one point where it matters.</p>
+    </div>
+    <ol class="flow">
+      <li><div class="node"><span class="num">1</span><span class="rail"></span></div><h3>Deal closes lost</h3><p>A Salesforce opportunity matches the trigger: Closed Lost, amount ≥ $10,000, not a renewal.</p><span class="tag">Opportunity.StageName</span></li>
+      <li><div class="node"><span class="num">2</span><span class="rail"></span></div><h3>Sales gets a say</h3><p>The deal owner gets a Slack heads-up and 24 hours to hold the invite. Frequency and spend caps apply.</p><span class="tag">#deal-desk</span></li>
+      <li><div class="node"><span class="num">3</span><span class="rail"></span></div><h3>Neutral invite</h3><p>The buyer gets an unbranded invitation with a $75 thank-you, paid from the incentives wallet.</p><span class="tag">Concealed identity</span></li>
+      <li><div class="node"><span class="num">4</span><span class="rail"></span></div><h3>AI interview</h3><p>A 15-minute conversation, any time of day. The moderator probes past the first answer.</p><span class="tag">Agentic moderator</span></li>
+      <li><div class="node"><span class="num">5</span><span class="rail"></span></div><h3>Evidence everywhere</h3><p>The real reason is written back to Salesforce and rolls into the Win/Loss dashboard and Ask AI.</p><span class="tag">GQ_Primary_Loss_Reason__c</span></li>
+    </ol>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="blocks">
+      <div class="meter">
+        <span class="eyebrow">Built from what ships today</span>
+        <h2>Mostly assembly, very little invention.</h2>
+        <div class="big tnum">8<span>/11</span></div>
+        <div class="cells" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="new"></i><i class="new"></i><i class="new"></i></div>
+        <div class="legend"><span>Already live in Great Question</span><span class="n">New for LossLens</span></div>
+        <p class="lede" style="font-size:17px">LossLens reuses what Great Question shipped through 2026. The new work is a trigger, a view and a field mapping.</p>
+      </div>
+      <div class="tablewrap">
+        <table class="caps">
+          <tbody>
+            <tr><td>Salesforce sync and push-back</td><td>Trigger source and loss-reason write-back</td><td><span class="pill ship">Live</span></td></tr>
+            <tr><td>Agentic AI moderator</td><td>Runs every interview, 24/7</td><td><span class="pill ship">Aug 2026</span></td></tr>
+            <tr><td>Concealed identity studies</td><td>Neutral interviewer, more candid buyers</td><td><span class="pill ship">May 2026</span></td></tr>
+            <tr><td>Incentives wallet and alerts</td><td>Pays buyers, enforces the monthly cap</td><td><span class="pill ship">Sep 2026</span></td></tr>
+            <tr><td>Webhooks</td><td>Booking and completion events</td><td><span class="pill ship">Aug 2026</span></td></tr>
+            <tr><td>Repository, highlights, Ask AI</td><td>Every interview is searchable evidence</td><td><span class="pill ship">Live</span></td></tr>
+            <tr><td>Auto reports for AI studies</td><td>Summary and findings per interview</td><td><span class="pill ship">Sep 2026</span></td></tr>
+            <tr><td>MCP server, 130+ actions</td><td>Answers from Claude, Cursor and ChatGPT</td><td><span class="pill ship">Live</span></td></tr>
+            <tr><td>CRM-event trigger with guardrails</td><td>Closed Lost rules, Slack veto, caps</td><td><span class="pill new">New</span></td></tr>
+            <tr><td>Win/Loss view</td><td>Sales says vs. buyers say, $ by real reason</td><td><span class="pill new">New</span></td></tr>
+            <tr><td>Loss-reason field mapping</td><td>Evidence-backed reason on the Opportunity</td><td><span class="pill new">New</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="walkthrough" style="background:var(--surface);border-block:1px solid var(--line)">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Walkthrough</span>
+      <h2>The prototype, screen by screen.</h2>
+      <p class="lede">Every screen sits inside the Great Question app shell and uses its own terms: Studies, Candidates, Repository, Incentives, Studio. The demo workspace is a fictional spend-management company called Ledgerly.</p>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-media"><button class="shot" data-full="trigger" aria-label="Enlarge: Salesforce trigger"><div class="chrome"><i></i><i></i><i></i><span>Settings › Integrations › Salesforce › Triggers</span></div><img src="img/trigger.jpg" alt="Salesforce trigger builder"></button></div>
+        <div class="step-text"><span class="step-num">STEP 1 · TRIGGER</span><h3>It starts where revenue teams already live.</h3><p>A new Triggers tab on the existing Salesforce integration. Pick which lost deals qualify, who gets invited, how long to wait and which study runs. The footer estimates volume and incentive spend before anything goes live.</p><div class="proves"><b>What this shows</b>Setup is a settings change for an admin, not a research project.</div></div>
+      </div>
+      <div class="step">
+        <div class="step-media"><button class="shot" data-full="guardrails" aria-label="Enlarge: Guardrails"><div class="chrome"><i></i><i></i><i></i><span>Guardrails · guided tour step 2 of 9</span></div><img src="img/guardrails.jpg" alt="Guardrails panel with Slack veto, contact limits and incentive cap"></button></div>
+        <div class="step-text"><span class="step-num">STEP 2 · GUARDRAILS</span><h3>Sales stays in control.</h3><p>Deal owners get a Slack message with Hold or Let it run. Each contact is invited at most once per 90 days, unsubscribes are honored, and a monthly incentive cap protects the budget.</p><div class="proves"><b>What this shows</b>Answers the first objection a sales leader will raise: "don't email my buyers without asking."</div></div>
+      </div>
+      <div class="step">
+        <div class="step-media"><button class="shot" data-full="studio" aria-label="Enlarge: Study in the Studio"><div class="chrome"><i></i><i></i><i></i><span>Studies › Win/Loss — Always-on › Studio</span></div><img src="img/studio.jpg" alt="AI moderated study in the Studio with concealed identity on"></button></div>
+        <div class="step-text"><span class="step-num">STEP 3 · STUDY</span><h3>An always-on study, set up once.</h3><p>A research goal, a six-question discussion guide and a moderator set to Balanced flexibility. Concealed identity is on, so the buyer talks to a neutral "Moderator" and never sees Ledgerly's branding.</p><div class="proves"><b>What this shows</b>A neutral interviewer gets more candid answers than the rep who just lost the deal.</div></div>
+      </div>
+      <div class="step">
+        <div class="step-media"><button class="shot" data-full="timeline" aria-label="Enlarge: Automation timeline"><div class="chrome"><i></i><i></i><i></i><span>Win/Loss › Lost deals › Acme Freight</span></div><img src="img/timeline.jpg" alt="Automation activity from Salesforce event to invite"></button></div>
+        <div class="step-text"><span class="step-num">STEP 4 · AUTOMATION</span><h3>Watch one deal run end to end.</h3><p>"Simulate a lost deal" plays the whole sequence for Acme Freight, an $84,000 opportunity the rep logged as Price: Slack heads-up, unbranded invite, a 14-minute interview, then the Salesforce update.</p><div class="proves"><b>What this shows</b>The full loop runs with no researcher involved.</div></div>
+      </div>
+      <div class="step">
+        <div class="step-media"><button class="shot" data-full="interview" aria-label="Enlarge: Interview playback"><div class="chrome"><i></i><i></i><i></i><span>Repository › Acme Freight · Win/loss interview</span></div><img src="img/interview.jpg" alt="Interview playback with transcript showing the AI moderator probing past price"></button></div>
+        <div class="step-text"><span class="step-num">STEP 5 · INTERVIEW</span><h3>The buyer says price. The moderator asks what happened.</h3><p>At 05:48 the VP Finance says it came down to price. The moderator asks what happened right before price became the deciding factor. At 06:24 the real reason surfaces: no native NetSuite sync, so the extra implementation work made Ledgerly feel expensive.</p><div class="proves"><b>What this shows</b>The interview finds the reason behind the stated reason, and every claim links to a timestamp.</div></div>
+      </div>
+      <div class="step">
+        <div class="step-media"><button class="shot" data-full="writeback" aria-label="Enlarge: Salesforce write-back"><div class="chrome"><i></i><i></i><i></i><span>Automation activity · Salesforce updated</span></div><img src="img/writeback.jpg" alt="Salesforce fields updated with interview status and primary loss reason"></button></div>
+        <div class="step-text"><span class="step-num">STEP 6 · WRITE-BACK</span><h3>The real reason lands back in the CRM.</h3><p>Two fields update on the Opportunity: Interview_Status__c and GQ_Primary_Loss_Reason__c. The rep's original reason is kept untouched, so both views can be reported side by side.</p><div class="proves"><b>What this shows</b>Research becomes structured revenue data that RevOps can report on.</div></div>
+      </div>
+      <div class="step">
+        <div class="step-media"><button class="shot" data-full="insights" aria-label="Enlarge: Competitors and top insights"><div class="chrome"><i></i><i></i><i></i><span>Win/Loss › Overview</span></div><img src="img/insights.jpg" alt="Competitor mentions and top insights with quotes and clips"></button></div>
+        <div class="step-text"><span class="step-num">STEP 7 · WIN/LOSS VIEW</span><h3>One page for the CRO and the head of product.</h3><p>Pipeline lost by real reason, competitor mentions, and synthesized insights with a quote, the buyer's role, the deal size and a clip. Share to Slack, build a highlight reel or export.</p><div class="proves"><b>What this shows</b>A recurring, evidence-backed answer to "why are we losing?"</div></div>
+      </div>
+      <div class="step">
+        <div class="step-media"><button class="shot" data-full="askai" aria-label="Enlarge: Ask AI"><div class="chrome"><i></i><i></i><i></i><span>Ask AI · Great Question MCP</span></div><img src="img/askai.jpg" alt="Ask AI panel answering why deals were lost to a competitor with citations"></button></div>
+        <div class="step-text"><span class="step-num">STEP 8 · ASK AI AND MCP</span><h3>Ask from anywhere, with citations.</h3><p>"Why did we lose to Spendwise this quarter, and what should product prioritise?" The answer cites interview timestamps and ends with a recommendation: ship native NetSuite sync, cited in 6 of 9 Spendwise losses, worth $388k.</p><div class="proves"><b>What this shows</b>The same evidence works in Claude, Cursor or ChatGPT through the existing MCP server.</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">The moment that sells it</span>
+      <h2>Sales logged Price on 46% of losses. Buyers named it on 12%.</h2>
+      <p class="lede">This is the chart a CRO forwards to the CEO. The leading hidden cause, a missing integration, barely appears in the CRM.</p>
+    </div>
+    <div class="chart-grid">
+      <div class="panel">
+        <h3>Sales says vs. buyers say</h3>
+        <p class="sub">Share of 17 interviewed lost deals · last 90 days</p>
+        <svg viewBox="0 0 560 330" role="img" aria-label="Paired bar chart. Price: CRM 46%, buyers 12%. Missing integration: CRM 8%, buyers 35%. Implementation effort: 6% vs 18%. No decision: 22% vs 12%. Features: 18% vs 23%.">
+          <g id="pairs"></g>
+        </svg>
+        <div class="legend"><span style="--c:var(--crm)" class="lg-crm">CRM-logged reason</span><span class="lg-buy">Interview primary reason</span></div>
+      </div>
+      <div class="panel">
+        <h3>Pipeline lost by real reason</h3>
+        <p class="sub">Opportunity amount by interview primary reason · $1.42M</p>
+        <svg viewBox="0 0 400 300" role="img" aria-label="Missing integration $512k, Features $338k, Implementation effort $276k, Price $162k, No decision $132k.">
+          <g id="dollars"></g>
+        </svg>
+      </div>
+    </div>
+    <div class="callout-row">
+      <div class="stat"><b class="tnum">−34 pts</b><span>Price as a loss reason, CRM vs. buyers</span></div>
+      <div class="stat"><b class="tnum">+27 pts</b><span>Missing integration, the hidden driver</span></div>
+      <div class="stat"><b class="tnum">4 days</b><span>Median from Closed Lost to an evidence-backed summary</span></div>
+    </div>
+    <p class="demo-note">All figures are demo data from the prototype's fictional Ledgerly workspace. They illustrate the output, not measured results.</p>
+  </div>
+</section>
+
+<section style="background:var(--surface);border-block:1px solid var(--line)">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Why this matters for Great Question</span>
+      <h2>A new buyer, a new revenue line, and a reason to renew.</h2>
+    </div>
+    <div class="value">
+      <div class="vcard"><span class="k">New budget</span><h3>Sells to the revenue org.</h3><p>Today the buyer is research, product and design. Win/loss is owned by the CRO, RevOps and product marketing, and is usually paid for with outside agency fees. LossLens puts Great Question in front of a second budget holder at every account that already syncs Salesforce.</p></div>
+      <div class="vcard"><span class="k">Usage revenue</span><h3>Grows with interviews, not seats.</h3><p>Each triggered interview is metered AI moderation plus incentives flowing through the wallet. That fits the move toward agentic research, where an agent runs more studies than any seat holder could.</p></div>
+      <div class="vcard"><span class="k">Proof of value</span><h3>Research that ties to dollars.</h3><p>Every insight carries a deal amount. Research leaders can show which roadmap decisions came from lost pipeline, the "close to the money" positioning Ned has argued for, and that keeps champions funded at renewal.</p></div>
+      <div class="vcard"><span class="k">Defensibility</span><h3>Hard for point tools to copy.</h3><p>AI-interview startups can run the conversation. They don't have the CRM trigger, governance, incentives, recruitment and a cross-study repository in one place. LossLens turns that breadth into a visible advantage.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Risks and how the design answers them</span>
+      <h2>The objections, handled up front.</h2>
+    </div>
+    <div class="tablewrap">
+      <table class="risks">
+        <thead><tr><th>Objection</th><th>Design answer</th></tr></thead>
+        <tbody>
+          <tr><td>"Don't contact my buyers without asking."</td><td>Slack heads-up to the deal owner with a 24-hour hold. Triggers can exclude segments, renewals and named accounts.</td></tr>
+          <tr><td>Buyer fatigue and brand risk</td><td>One invite per contact per 90 days across all Great Question studies. Unsubscribes and do-not-contact honored from Salesforce. Neutral, unbranded invite.</td></tr>
+          <tr><td>Low response rates</td><td>Incentive per completed interview, a 15-minute format and no scheduling. The prototype assumes 45%; the pilot will test it.</td></tr>
+          <tr><td>Trust in AI findings</td><td>Every summary and Ask AI answer cites interview timestamps. The rep's reason is kept beside the buyer's so leaders can compare both.</td></tr>
+          <tr><td>Spend control</td><td>Monthly incentive cap with live usage, plus the existing wallet balance alerts.</td></tr>
+          <tr><td>CRM coverage</td><td>Salesforce first because Great Question already syncs it. HubSpot is the next connector.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section style="background:var(--surface);border-block:1px solid var(--line)">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Proposed next step</span>
+      <h2>A 30-day pilot with three design partners.</h2>
+      <p class="lede">Choose three existing customers that already sync Salesforce and have a revenue leader willing to sponsor it.</p>
+    </div>
+    <div class="pilot">
+      <div><span class="wk">WEEK 1</span><h3>Configure</h3><p>Set trigger rules, guardrails and the always-on study with each partner's RevOps lead.</p></div>
+      <div><span class="wk">WEEKS 2–3</span><h3>Run</h3><p>Interviews trigger on real losses. Weekly check on response rate, holds and spend.</p></div>
+      <div><span class="wk">WEEK 4</span><h3>Read out</h3><p>Present the Sales-says-vs-buyers-say view to each CRO and head of product.</p></div>
+      <div><span class="wk">AFTER</span><h3>Decide</h3><p>Price the add-on, choose build scope, and turn partner quotes into launch proof.</p></div>
+    </div>
+    <div class="metrics">
+      <div class="stat"><b class="tnum">≥ 30%</b><span>Response rate on triggered invites</span></div>
+      <div class="stat"><b class="tnum">≥ 10</b><span>Completed interviews per partner</span></div>
+      <div class="stat"><b class="tnum">≥ 1</b><span>Roadmap or pricing decision citing LossLens evidence</span></div>
+      <div class="stat"><b class="tnum">3 of 3</b><span>CROs who want to keep it running</span></div>
+    </div>
+    <div class="roadmap">
+      <div><b>Now</b><ul><li>Salesforce Closed Lost trigger</li><li>Slack veto and caps</li><li>Win/Loss view and write-back</li></ul></div>
+      <div><b>Next</b><ul><li>HubSpot trigger</li><li>Churn and downgrade triggers</li><li>Won-deal interviews for contrast</li></ul></div>
+      <div><b>Later</b><ul><li>Monthly CRO digest in Slack</li><li>Competitor battlecards from evidence</li><li>Benchmarks across Great Question accounts</li></ul></div>
+    </div>
+  </div>
+</section>
+</main>
+
+<section class="closing">
+  <div class="wrap grid">
+    <div>
+      <span class="eyebrow" style="color:#8FB4F2">See it for yourself</span>
+      <h2 style="margin-top:14px">Take the 3-minute guided tour.</h2>
+      <p>The prototype opens with a tour that walks through all nine steps, including a live simulation of a lost deal. Everything in it is clickable.</p>
+      <div class="cta-row"><a class="btn btn-primary" href="https://losslens-gq.vercel.app/" target="_blank" rel="noopener">Open LossLens →</a></div>
+      <div class="sig">
+        <strong>Temi</strong>
+        <span>Concept, research and prototype</span>
+        <code>topkin4real@gmail.com</code>
+      </div>
+    </div>
+    <button class="shot" data-full="welcome" aria-label="Enlarge: Guided tour welcome"><div class="chrome"><i></i><i></i><i></i><span>losslens-gq.vercel.app</span></div><img src="img/welcome.jpg" alt="LossLens welcome modal offering a three-minute tour"></button>
+  </div>
+</section>
+<footer class="wrap">LossLens is an independent concept prototype. It is not a Great Question product, and all company names and figures in the demo are fictional.</footer>
+
+<div class="lb" id="lb" hidden><button type="button" id="lbClose">Close</button><img id="lbImg" alt=""></div>
+
+<script>
+(function(){
+  var css = getComputedStyle(document.documentElement);
+  function tok(n){return css.getPropertyValue(n).trim();}
+  var NS='http://www.w3.org/2000/svg';
+  function el(tag,attrs,text){var e=document.createElementNS(NS,tag);for(var k in attrs)e.setAttribute(k,attrs[k]);if(text!=null)e.textContent=text;return e;}
+
+  // Paired bars
+  var data=[["Price",46,12],["Missing integration",8,35],["Implementation effort",6,18],["No decision",22,12],["Features",18,23]];
+  var g=document.getElementById('pairs'); var x0=160, w=330, max=50, rowH=58, top=10;
+  for(var t=0;t<=50;t+=10){var x=x0+w*t/max;g.appendChild(el('line',{x1:x,x2:x,y1:top,y2:top+rowH*5,stroke:'var(--line)','stroke-width':1}));g.appendChild(el('text',{x:x,y:top+rowH*5+18,'text-anchor':'middle',class:'svg-muted'},t+'%'));}
+  data.forEach(function(d,i){
+    var y=top+i*rowH+8;
+    var hl = d[0]==="Price"||d[0]==="Missing integration";
+    g.appendChild(el('text',{x:0,y:y+21,class:'svg-label','font-weight':hl?700:500},d[0]));
+    g.appendChild(el('rect',{x:x0,y:y,width:w*d[1]/max,height:14,rx:3,fill:'var(--crm)'}));
+    g.appendChild(el('rect',{x:x0,y:y+20,width:w*d[2]/max,height:14,rx:3,fill:'var(--accent)'}));
+    g.appendChild(el('text',{x:x0+w*d[1]/max+6,y:y+11,class:'svg-val',fill:'var(--crm)'},d[1]+'%'));
+    g.appendChild(el('text',{x:x0+w*d[2]/max+6,y:y+31,class:'svg-val',fill:'var(--accent)'},d[2]+'%'));
+    var diff=d[2]-d[1];
+    g.appendChild(el('text',{x:556,y:y+22,'text-anchor':'end',class:'svg-val',fill:diff>0?'var(--good)':'var(--muted)'},(diff>0?'+':'−')+Math.abs(diff)+' pts'));
+  });
+
+  // Dollar bars
+  var dd=[["Missing integration",512,6],["Features",338,4],["Implementation effort",276,3],["Price",162,2],["No decision",132,2]];
+  var g2=document.getElementById('dollars');
+  dd.forEach(function(d,i){
+    var y=i*58+6;
+    g2.appendChild(el('text',{x:0,y:y+12,class:'svg-label','font-weight':i===0?700:500},d[0]));
+    g2.appendChild(el('text',{x:400,y:y+12,'text-anchor':'end',class:'svg-val',fill:'var(--ink)'},'$'+d[1]+'k · '+d[2]+' deals'));
+    g2.appendChild(el('rect',{x:0,y:y+22,width:400,height:12,rx:3,fill:'var(--line)'}));
+    g2.appendChild(el('rect',{x:0,y:y+22,width:400*d[1]/512,height:12,rx:3,fill:i===0?'var(--accent)':'var(--accent-soft)',stroke:i===0?'none':'var(--accent)','stroke-width':i===0?0:1}));
+  });
+
+  // Legend swatches
+  var s=document.createElement('style');
+  s.textContent='.lg-crm::before{background:var(--crm)!important}.lg-buy::before{background:var(--accent)!important}';
+  document.head.appendChild(s);
+
+  // Lightbox
+  var lb=document.getElementById('lb'), img=document.getElementById('lbImg'), last=null;
+  document.querySelectorAll('.shot').forEach(function(b){
+    b.addEventListener('click',function(){var i=b.querySelector('img');img.src=i.src;img.alt=i.alt;last=b;lb.hidden=false;document.getElementById('lbClose').focus();});
+  });
+  function close(){lb.hidden=true;img.src='';if(last)last.focus();}
+  lb.addEventListener('click',function(e){if(e.target!==img)close();});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!lb.hidden)close();});
+})();
+</script>
+
+</body>
+</html>
